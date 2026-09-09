@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import SubpageLayout from '../components/SubpageLayout';
+import { apiFetch } from '../utils/api';
 
 const EXPO_OUT = [0.16, 1, 0.3, 1];
 
@@ -16,12 +17,52 @@ const AUCTIONS = [
 const formatINR = (n) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
-const FILTERS = ['All', 'Electronics', 'Watches', 'Laptops', 'Instruments'];
+const FILTERS = ['All', 'Electronics', 'Watches', 'Laptops', 'Instruments', 'General'];
+
+const calculateTimeLeft = (endTime) => {
+  const difference = new Date(endTime) - new Date();
+  if (difference <= 0) return '00:00:00';
+  
+  const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((difference / 1000 / 60) % 60);
+  const seconds = Math.floor((difference / 1000) % 60);
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
 
 const AuctionsPage = ({ onNavigate }) => {
   const [filter, setFilter] = useState('All');
+  const [auctions, setAuctions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const visible = filter === 'All' ? AUCTIONS : AUCTIONS.filter((a) => a.category === filter);
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        const response = await apiFetch('/auctions');
+        if (response.success) {
+          const mappedAuctions = response.data.map(a => ({
+            id: a._id,
+            title: a.title,
+            category: 'General', // Backend has no category yet
+            currentBid: a.currentPrice,
+            bids: 0, // Backend doesn't return bid count here
+            timeLeft: calculateTimeLeft(a.endTime),
+            image: a.image || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&q=80',
+            status: a.status === 'active' && new Date(a.endTime) - new Date() < 3600000 ? 'ending' : a.status
+          }));
+          setAuctions(mappedAuctions);
+        }
+      } catch (error) {
+        console.error('Failed to fetch auctions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAuctions();
+  }, []);
+
+  const visible = filter === 'All' ? auctions : auctions.filter((a) => a.category === filter);
 
   return (
     <SubpageLayout
@@ -51,6 +92,19 @@ const AuctionsPage = ({ onNavigate }) => {
           </button>
         ))}
       </motion.div>
+
+      {/* Loading state */}
+      {loading && (
+        <div className="flex justify-center items-center py-20">
+          <div className="w-8 h-8 border-4 border-[#a3e635] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+
+      {!loading && visible.length === 0 && (
+        <div className="text-center py-20 text-white/50">
+          No auctions found for this category.
+        </div>
+      )}
 
       {/* Auction grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">

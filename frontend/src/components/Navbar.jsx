@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import BidzoLogo from './BidzoLogo';
+import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
   { label: 'Auctions',     page: 'auctions' },
@@ -13,6 +14,7 @@ const NAV_LINKS = [
 const EXPO_OUT = [0.16, 1, 0.3, 1];
 
 const Navbar = ({ onNavigate }) => {
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -75,17 +77,43 @@ const Navbar = ({ onNavigate }) => {
             ))}
           </div>
 
-          <motion.button
-            onClick={() => handleNav('auctions')}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            whileHover={{ opacity: 0.88 }}
-            className="flex items-center self-stretch rounded-full px-5 text-sm font-medium text-white cursor-pointer"
-            style={{ background: 'linear-gradient(to bottom, #2b2b2b, #101010)' }}
-          >
-            Start Bidding
-          </motion.button>
+          {user ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex items-center gap-3"
+            >
+              <span className="text-sm font-medium text-white/70">Hi, {user.name.split(' ')[0]}</span>
+              <button
+                onClick={() => logout()}
+                className="flex items-center self-stretch rounded-full px-5 py-1.5 text-sm font-medium text-white cursor-pointer bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                Logout
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex items-center gap-2"
+            >
+              <button
+                onClick={() => handleNav('login')}
+                className="text-sm font-medium text-white/80 hover:text-white px-3 transition-colors cursor-pointer"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => handleNav('register')}
+                className="flex items-center self-stretch rounded-full px-5 py-1.5 text-sm font-medium text-black cursor-pointer"
+                style={{ background: '#a3e635' }}
+              >
+                Sign Up
+              </button>
+            </motion.div>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -133,13 +161,30 @@ const Navbar = ({ onNavigate }) => {
         </div>
         <div className="mx-6 mt-6" style={{ height: '1px', background: 'rgba(255,255,255,0.07)' }} />
         <div className="mt-auto px-6 pb-10" style={{ opacity: mobileOpen ? 1 : 0, transform: mobileOpen ? 'translateY(0)' : 'translateY(16px)', transition: 'opacity 400ms cubic-bezier(0.16,1,0.3,1) 300ms, transform 400ms cubic-bezier(0.16,1,0.3,1) 300ms' }}>
-          <button
-            onClick={() => handleNav('auctions')}
-            className="w-full rounded-full py-3.5 text-sm font-semibold text-white hover:opacity-85 transition-opacity"
-            style={{ background: 'linear-gradient(to bottom, #2b2b2b, #101010)' }}
-          >
-            START BIDDING →
-          </button>
+          {user ? (
+            <button
+              onClick={() => { logout(); closeMobile(); }}
+              className="w-full rounded-full py-3.5 text-sm font-semibold text-white hover:bg-white/20 bg-white/10 transition-colors"
+            >
+              LOGOUT
+            </button>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => handleNav('login')}
+                className="w-full rounded-full py-3.5 text-sm font-semibold text-white bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                LOG IN
+              </button>
+              <button
+                onClick={() => handleNav('register')}
+                className="w-full rounded-full py-3.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+                style={{ background: '#a3e635' }}
+              >
+                SIGN UP
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>
